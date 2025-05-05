@@ -1,4 +1,3 @@
 <?php
-session_start();
-session_destroy();
-header("Location: /login.php");
+header("Location: /src/handlers/auth/logout.php");
+exit;

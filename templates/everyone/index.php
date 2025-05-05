@@ -5,6 +5,11 @@ ob_start();
 ?>
 
 <a href="/pokemanager/public/?action=create">...</a>
+<?php if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'admin'): ?>
+    <a href="/pokemanager/public/?action=create">
+        <button class="nav-button">Create pokemon</button>
+    </a>
+<?php endif; ?>
 
 <style>
     body {
@@ -29,19 +34,6 @@ ob_start();
         color: #2c3e50;
     }
 
-    a[href="/list-of-spells/public/?action=create"] {
-        display: inline-block;
-        padding: 10px 20px;
-        margin: 20px;
-        background-color: #3498db;
-        color: white;
-        border-radius: 5px;
-        transition: background-color 0.3s ease;
-    }
-
-    a[href="/list-of-spells/public/?action=create"]:hover {
-        background-color: #2980b9;
-    }
 
     ul {
         list-style: none;
@@ -101,13 +93,13 @@ ob_start();
 
 
 <?php if (empty($pokemons)): ?>
-    <p>Покемоны ушли за лучшей жизнью.</p>
+    <p>Pokemon have gone for a better life.</p>
 <?php else: ?>
     <ul>
         <?php foreach ($pokemons as $pokemon): ?>
             <li>
                 <a href="/pokemanager/public/?action=show&id=<?= $pokemon['id'] ?>">
-                    <?= htmlspecialchars($pokemon['title']) ?>
+                    <?= htmlspecialchars($pokemon['name']) ?>
                 </a><br>
             </li>
         <?php endforeach; ?>

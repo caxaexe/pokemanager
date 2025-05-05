@@ -1,1 +1,1 @@
-<?php include '../templates/auth/register_form.php'; ?>
+<?php include '../templates/auth/register.php'; ?>

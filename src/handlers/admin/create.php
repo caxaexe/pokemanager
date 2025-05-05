@@ -6,64 +6,84 @@ require_once __DIR__ . '/../../../src/helpers.php';
 
 
 function createPokemon(PDO $pdo, array $postData): array {
-    // Получение данных из POST
     $name = trim($postData['name'] ?? '');
     $generation = trim($postData['generation'] ?? '');
     $category = trim($postData['category'] ?? '');
     $description = trim($postData['description'] ?? '');
-    $types = array_filter(array_map('trim', $postData['types'] ?? []));
+    $type = array_filter(array_map('trim', $postData['type'] ?? [])); // Исправлено: types вместо type
     $abilities = array_values(array_filter(array_map('trim', $postData['abilities'] ?? []), fn($s) => $s !== ''));
-    $weaknesses = array_filter(array_map('trim', $postData['weaknesses'] ?? []));  // Получение выбранных слабостей
-
-    // Валидация данных
-    $errors = validatePokemon($name, $generation, $category, $description, $types, $abilities, $weaknesses);
-
-    // Обработка изображения
+    $weaknesses = array_filter(array_map('trim', $postData['weaknesses'] ?? []));
     $imageUrl = null;
-    if (!empty($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+    $image = $_FILES['image'] ?? null;
+
+    $errors = validatePokemon($name, $type, $generation, $category, $description, $weaknesses, $image, $abilities);
+
+    if ($image && $image['error'] === UPLOAD_ERR_OK) {
         $uploadDir = __DIR__ . '/../../../public/assets/';
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
+            mkdir($uploadDir, 0755, true);
         }
 
-        $filename = uniqid('poke_', true) . '.' . pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+        $filename = uniqid('poke_', true) . '.' . pathinfo($image['name'], PATHINFO_EXTENSION);
         $destination = $uploadDir . $filename;
 
-        if (move_uploaded_file($_FILES['image']['tmp_name'], $destination)) {
+        if (move_uploaded_file($image['tmp_name'], $destination)) {
             $imageUrl = 'public/assets/' . $filename;
         } else {
             $errors['image'] = 'Failed to save the uploaded image.';
         }
-    } else {
+    } elseif ($image && $image['error'] !== UPLOAD_ERR_OK) {
+        $errors['image'] = 'Error uploading image. Please try again.';
+    } elseif (!$image) {
         $errors['image'] = 'Please upload an image.';
     }
 
     if (!empty($errors)) {
         return [
             'errors' => $errors,
-            'data' => compact('name', 'generation', 'category', 'description', 'types', 'abilities', 'weaknesses')
+            'data' => compact('name', 'generation', 'category', 'description', 'type', 'abilities', 'weaknesses')
         ];
     }
 
-    // Вставка данных в базу
-    $stmt = $pdo->prepare('
-        INSERT INTO pokemons (name, generation, category, description, types, abilities, weaknesses, image, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ');
+    try {
+        // Вставка покемона без столбца weaknesses
+        $stmt = $pdo->prepare('
+            INSERT INTO pokemons (name, generation, category, description, type, abilities, image, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ');
+        $stmt->execute([
+            $name,
+            $generation,
+            $category,
+            $description,
+            json_encode($type, JSON_UNESCAPED_UNICODE),
+            json_encode($abilities, JSON_UNESCAPED_UNICODE),
+            $imageUrl,
+            date('Y-m-d H:i:s')
+        ]);
 
-    $stmt->execute([
-        $name,
-        $generation, // Без JSON, если один ID
-        $category,
-        $description,
-        json_encode($types, JSON_UNESCAPED_UNICODE),
-        json_encode($abilities, JSON_UNESCAPED_UNICODE),
-        json_encode($weaknesses, JSON_UNESCAPED_UNICODE),  // Добавление слабостей
-        $imageUrl,
-        date('Y-m-d H:i:s')
-    ]);
+        // Получаем ID только что созданного покемона
+        $pokemonId = $pdo->lastInsertId();
 
-    return ['success' => true];
+        // Вставка слабостей в таблицу pokemon_weaknesses
+        if (!empty($weaknesses)) {
+            $stmtWeakness = $pdo->prepare('
+                INSERT INTO pokemon_weaknesses (pokemon_id, weakness_id)
+                VALUES (?, ?)
+            ');
+            foreach ($weaknesses as $weaknessId) {
+                $stmtWeakness->execute([$pokemonId, $weaknessId]);
+            }
+        }
+
+        return ['success' => true];
+    } catch (PDOException $e) {
+        $errors['database'] = 'Failed to save Pokémon: ' . $e->getMessage();
+        return [
+            'errors' => $errors,
+            'data' => compact('name', 'generation', 'category', 'description', 'type', 'abilities', 'weaknesses')
+        ];
+    }
 }
 
 

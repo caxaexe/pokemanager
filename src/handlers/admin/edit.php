@@ -3,38 +3,19 @@
 require_once __DIR__ . '/../../../config/db.php';
 require_once __DIR__ . '/../../../src/helpers.php';
 
-/**
- * Обновляет информацию о заклинании в базе данных.
- *
- * Эта функция обновляет данные заклинания в таблице "spells" по заданному ID. 
- * Перед обновлением данных выполняется валидация полей заклинания.
- *
- * @param PDO $pdo Объект подключения к базе данных.
- * @param int $id Идентификатор заклинания, которое нужно обновить.
- * @param array $data Массив с новыми данными заклинания:
- *                    - 'title' (string) — название заклинания,
- *                    - 'category' (string) — категория заклинания,
- *                    - 'description' (string) — описание заклинания,
- *                    - 'tags' (array) — теги заклинания,
- *                    - 'steps' (array) — шаги заклинания.
- *
- * @return array Возвращает массив с результатом операции:
- *               - если успех: ['success' => true],
- *               - если ошибки: ['errors' => [...]].
- */
-function updateSpell(PDO $pdo, $id, $data) {
-    // Извлечение данных из массива
+
+function updatePokemon(PDO $pdo, $id, $data) {
     $title = $data['title'] ?? '';
     $category = $data['category'] ?? '';
     $description = $data['description'] ?? '';
     $tags = $data['tags'] ?? []; 
     $steps = $data['steps'] ?? [];
 
-    // Валидация данных
+    
     $errors = validateSpell($title, $category, $description, $tags, $steps);
 
     if (empty($errors)) {
-        // Подготовка и выполнение SQL-запроса для обновления данных
+   
         $stmt = $pdo->prepare("UPDATE spells SET title = ?, category = ?, description = ?, tags = ?, steps = ? WHERE id = ?");
         $stmt->execute([
             $title,
