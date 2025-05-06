@@ -3,21 +3,17 @@
 ob_start();
 
 // Получаем типы
-$types = is_array($pokemon['types']) ? $pokemon['types'] : (empty($pokemon['types']) ? [] : explode(',', $pokemon['types']));
-if (!empty($types)) {
-    $placeholders = str_repeat('?,', count($types) - 1) . '?';
+$type = is_array($pokemon['type']) ? $pokemon['type'] : (empty($pokemon['type']) ? [] : explode(',', $pokemon['type']));
+if (!empty($type)) {
+    $placeholders = str_repeat('?,', count($type) - 1) . '?';
     $typeStmt = $pdo->prepare("SELECT name FROM types WHERE id IN ($placeholders)");
-    $typeStmt->execute($types);
+    $typeStmt->execute($type);
     $typeNames = $typeStmt->fetchAll(PDO::FETCH_COLUMN);
 } else {
     $typeNames = [];
 }
 
-// Категория
-$categoryId = $pokemon['category'];
-$stmt = $pdo->prepare("SELECT name FROM categories WHERE id = ?");
-$stmt->execute([$categoryId]);
-$category = $stmt->fetchColumn();
+
 
 // Поколение
 $generationId = $pokemon['generation'] ?? null;
@@ -106,7 +102,7 @@ $abilities = is_array($pokemon['abilities']) ? $pokemon['abilities'] : explode('
 </style>
 
 <div class="pokemon-view">
-    <h2><?= htmlspecialchars($pokemon['title']) ?></h2>
+    <h2><?= htmlspecialchars($pokemon['name']) ?></h2>
 
     <?php if (!empty($pokemon['image'])): ?>
         <img src="/pokemanager/uploads/<?= htmlspecialchars($pokemon['image']) ?>" alt="Pokemon Image">
@@ -127,9 +123,7 @@ $abilities = is_array($pokemon['abilities']) ? $pokemon['abilities'] : explode('
         </ul>
     <?php endif; ?>
 
-    <?php if (!empty($pokemon['created_at'])): ?>
-        <p><strong>Дата создания:</strong><br> <?= htmlspecialchars($pokemon['created_at']) ?></p>
-    <?php endif; ?>
+
 
     <div class="actions">
         <a href="/pokemanager/public/?action=edit&id=<?= $pokemon['id'] ?>">Редактировать</a>
@@ -139,5 +133,5 @@ $abilities = is_array($pokemon['abilities']) ? $pokemon['abilities'] : explode('
 
 <?php
 $content = ob_get_clean();
-include __DIR__ . '/../layout.php';
+include __DIR__ . '/../everyone/layout.php';
 ?>

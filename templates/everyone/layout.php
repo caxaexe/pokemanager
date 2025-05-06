@@ -85,13 +85,14 @@
     <?php if (!isset($_SESSION['user'])): ?>
         <a href="login.php"><button class="nav-button">Login</button></a>
         <a href="register.php"><button class="nav-button">Register</button></a>
+        <a href="../templates/admin/create.php"><button class="nav-button">Add Pokemon</button></a>
     <?php else: ?>
         <span style="color: #8e44ad; padding: 8px 10px;">
             <?= htmlspecialchars($_SESSION['user']['email']) ?>
         </span>
-        <?php if ($_SESSION['user']['role'] === 'admin'): ?>
-            <a href="/templates/admin/create.php"><button class="nav-button">Add Pokemon</button></a>
-        <?php endif; ?>
+        <!-- <?php if ($_SESSION['user']['role'] === 'admin'): ?> -->
+            <!-- <a href="/templates/admin/create.php"><button class="nav-button">Add Pokemon</button></a> -->
+        <!-- <?php endif; ?> -->
         <a href="/logout.php"><button class="nav-button">Logout</button></a>
     <?php endif; ?>
 </nav>

@@ -19,21 +19,20 @@ switch ($action) {
         require_once __DIR__ . '/../src/handlers/admin/create.php';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Создание заклинания с использованием данных POST
             $result = createPokemon($pdo, $data);
-
+        
             if (!empty($result['success'])) {
-                // Успешное создание, редирект на главную
-                header('Location: /pokemanager/public/');
-                exit;
+                $success = true;
+                // Не перенаправляем — показываем сообщение
+            } else {
+                $errors = $result['errors'] ?? [];
+                $data = $result['data'] ?? [];
+                $success = false;
             }
-
-            // В случае ошибок отображаются данные и ошибки
-            $errors = $result['errors'] ?? [];
-            $data = $result['data'] ?? [];
         } else {
             $data = [];
             $errors = [];
+            $success = null; // Форма ещё не отправлялась
         }
 
         // Включаем шаблон для создания заклинания

@@ -2,6 +2,14 @@
 
 require_once __DIR__ . '/../../config/auth.php';
 // requireAdmin();
+require_once __DIR__ . '/../../config/db.php';
+
+// Получаем подключение к базе данных
+$pdo = getPdoConnection();
+
+// Пример запроса для получения типов покемонов
+$stmt = $pdo->query("SELECT * FROM types");
+$types = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 ob_start();
