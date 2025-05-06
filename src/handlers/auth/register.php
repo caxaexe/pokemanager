@@ -1,44 +1,39 @@
 <?php
 session_start();
-require_once '../../../config/bd.php'; // подключение к БД
+require_once dirname(__DIR__, 3) . '/config/db.php';
 
-$email = trim($_POST['email']);
-$password = $_POST['password'];
-$confirm = $_POST['confirm_password'];
+$username = $_POST['username'] ?? '';
+$password = $_POST['password'] ?? '';
+$confirm  = $_POST['confirm_password'] ?? '';
 
-if (!$email || !$password || !$confirm) {
-    $_SESSION['error'] = "Все поля обязательны.";
-    header("Location: /register.php");
-    exit;
-}
-
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    $_SESSION['error'] = "Невалидный email.";
-    header("Location: /register.php");
-    exit;
+if (empty($username) || empty($password) || empty($confirm)) {
+    header('Location: /public/register.php?error=Заполните все поля');
+    exit();
 }
 
 if ($password !== $confirm) {
-    $_SESSION['error'] = "Пароли не совпадают.";
-    header("Location: /register.php");
-    exit;
+    header('Location: /public/register.php?error=Пароли не совпадают');
+    exit();
 }
 
-// Проверка, существует ли email
-$stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-$stmt->execute([$email]);
+// Проверка на существующего пользователя
+$stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
+$stmt->execute([$username]);
 
 if ($stmt->fetch()) {
-    $_SESSION['error'] = "Email уже используется.";
-    header("Location: /register.php");
-    exit;
+    header('Location: /public/register.php?error=Пользователь уже существует');
+    exit();
 }
 
-// Хэшируем пароль
-$hashed = password_hash($password, PASSWORD_DEFAULT);
+// Хеширование и добавление в БД
+$hash = password_hash($password, PASSWORD_DEFAULT);
 
-// Добавляем пользователя
-$stmt = $pdo->prepare("INSERT INTO users (email, password, role) VALUES (?, ?, 'user')");
-$stmt->execute([$email, $hashed]);
+$stmt = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
+$stmt->execute([$username, $hash, 'user']);
 
-header("Location: /login.php");
+$_SESSION['user_id'] = $pdo->lastInsertId();
+$_SESSION['username'] = $username;
+$_SESSION['role'] = 'user';
+
+header('Location: /templates/everyone/index.php');
+exit();

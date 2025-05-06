@@ -54,7 +54,9 @@ function validatePokemon($name, $type, $generation, $category, $description, $we
         $errors['image'] = 'Error uploading image. Please try again.';
     } elseif ($image['size'] > 2000000) {  // 2 MB max size
         $errors['image'] = 'Image size must be less than 2MB.';
-    } elseif (!in_array(mime_content_type($image['tmp_name']), ['image/jpeg', 'image/png', 'image/gif'])) {
+    } elseif (!file_exists($image['tmp_name']) || !in_array(mime_content_type($image['tmp_name']), ['image/jpeg', 'image/png', 'image/gif'])) {
+        $errors['image'] = 'Only JPG, PNG, and GIF images are allowed.';
+    }   elseif (!in_array(mime_content_type($image['tmp_name']), ['image/jpeg', 'image/png', 'image/gif'])) {
         $errors['image'] = 'Only JPG, PNG, and GIF images are allowed.';
     }
 

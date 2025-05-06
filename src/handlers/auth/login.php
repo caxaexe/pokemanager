@@ -1,32 +1,28 @@
 <?php
 session_start();
-require_once '../../../config/bd.php';
+require_once dirname(__DIR__, 3) . '/config/db.php';
 
-$email = trim($_POST['email']);
-$password = $_POST['password'];
+$username = $_POST['username'] ?? '';
+$password = $_POST['password'] ?? '';
 
-if (!$email || !$password) {
-    $_SESSION['error'] = "Заполните все поля.";
-    header("Location: /login.php");
-    exit;
+if (empty($username) || empty($password)) {
+    header('Location: /public/login.php?error=Пожалуйста, заполните все поля');
+    exit();
 }
 
-// Получаем пользователя
-$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-$stmt->execute([$email]);
-$user = $stmt->fetch();
+$stmt = $pdo->prepare("SELECT id, username, password, role FROM users WHERE username = ?");
+$stmt->execute([$username]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user || !password_verify($password, $user['password'])) {
-    $_SESSION['error'] = "Неверный email или пароль.";
-    header("Location: /login.php");
-    exit;
+    header('Location: /public/login.php?error=Неверное имя пользователя или пароль');
+    exit();
 }
 
-// Авторизация
-$_SESSION['user'] = [
-    'id' => $user['id'],
-    'email' => $user['email'],
-    'role' => $user['role']
-];
+// Вход успешен
+$_SESSION['user_id'] = $user['id'];
+$_SESSION['username'] = $user['username'];
+$_SESSION['role'] = $user['role'];
 
-header("Location: /templates/everyone/index.php");
+header('Location: /templates/everyone/index.php');
+exit();

@@ -23,18 +23,20 @@ function createPokemon(PDO $pdo, array $postData): array {
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
-
+    
         $filename = uniqid('poke_', true) . '.' . pathinfo($image['name'], PATHINFO_EXTENSION);
         $destination = $uploadDir . $filename;
-
+    
         if (move_uploaded_file($image['tmp_name'], $destination)) {
             $imageUrl = 'public/assets/' . $filename;
         } else {
             $errors['image'] = 'Failed to save the uploaded image.';
         }
-    } elseif ($image && $image['error'] !== UPLOAD_ERR_OK) {
-        $errors['image'] = 'Error uploading image. Please try again.';
-    } elseif (!$image) {
+    } elseif ($image && $image['error'] !== UPLOAD_ERR_NO_FILE) {
+        // Ошибка при загрузке файла (но файл был передан)
+        $errors['image'] = 'Error uploading image (code ' . $image['error'] . ').';
+    } else {
+        // Файл не выбран вовсе
         $errors['image'] = 'Please upload an image.';
     }
 
@@ -84,6 +86,18 @@ function createPokemon(PDO $pdo, array $postData): array {
             'data' => compact('name', 'generation', 'category', 'description', 'type', 'abilities', 'weaknesses')
         ];
     }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $result = createPokemon($pdo, $_POST);
+
+    if (!empty($result['success'])) {
+        header('Location: /pokemanager/public/?action=list');
+        exit;
+    }
+
+    $errors = $result['errors'] ?? [];
+    $old = $result['data'] ?? [];
 }
 
 
