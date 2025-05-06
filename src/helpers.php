@@ -23,49 +23,45 @@ function requireAdmin() {
 }
 
 
-function validatePokemon($name, $type, $generation, $category, $description, $weaknesses, $image, $abilities) {
+function validatePokemon($name, $type, $generation, $category, $description, $abilities, $existingNames, $imageName): array {
     $errors = [];
 
-    if (trim($name) === '') {
-        $errors['name'] = "Enter name.";
+    if (strlen($name) < 3) {
+        $errors[] = "Имя покемона должно быть не менее 3 символов.";
     }
 
-    if (!is_array($type) || count($type) === 0) {
-        $errors['type'] = 'Select type.';
+    if (in_array($name, $existingNames)) {
+        $errors[] = "Покемон с таким именем уже существует.";
     }
 
-    if (trim($generation) === '') {
-        $errors['generation'] = 'Select generation.';
+    if (empty($type) || !is_array($type)) {
+        $errors[] = "Необходимо указать хотя бы один тип.";
     }
 
-    if (trim($category) === '') {
-        $errors['category'] = "Enter category.";
-    }
-    
-    if (trim($description) === '') {
-        $errors['description'] = "Enter description.";
+    if (!is_numeric($generation) || (int)$generation < 1) {
+        $errors[] = "Поколение должно быть числом больше 0.";
     }
 
-    if (!is_array($weaknesses) || count($weaknesses) === 0) {
-        $errors['weaknesses'] = 'Select weaknesses.';
+    if (strlen($description) < 10) {
+        $errors[] = "Описание должно быть не короче 10 символов.";
     }
 
-    if ($image['error'] !== UPLOAD_ERR_OK) {
-        $errors['image'] = 'Error uploading image. Please try again.';
-    } elseif ($image['size'] > 2000000) {  // 2 MB max size
-        $errors['image'] = 'Image size must be less than 2MB.';
-    } elseif (!file_exists($image['tmp_name']) || !in_array(mime_content_type($image['tmp_name']), ['image/jpeg', 'image/png', 'image/gif'])) {
-        $errors['image'] = 'Only JPG, PNG, and GIF images are allowed.';
-    }   elseif (!in_array(mime_content_type($image['tmp_name']), ['image/jpeg', 'image/png', 'image/gif'])) {
-        $errors['image'] = 'Only JPG, PNG, and GIF images are allowed.';
+    if (empty($abilities) || !is_array($abilities)) {
+        $errors[] = "Необходимо указать способности.";
     }
 
-    if (!is_array($abilities) || count(array_filter($abilities, fn($st) => trim($st) !== '')) === 0) {
-        $errors['abilities'] = 'Enter at least one ability.';
+    if (!$imageName) {
+        $errors[] = "Изображение не загружено.";
     }
 
     return $errors;
 }
+
+function getAllPokemonNames(PDO $pdo): array {
+    $stmt = $pdo->query("SELECT name FROM pokemons");
+    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
+
 
 
 function getPokemonById(PDO $pdo, int $id): ?array {

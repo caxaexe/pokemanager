@@ -3,42 +3,33 @@
 require_once __DIR__ . '/../../../config/db.php';
 require_once __DIR__ . '/../../../src/helpers.php';
 
-
-
 function createPokemon(PDO $pdo, array $postData): array {
+    // Получаем данные из формы
     $name = trim($postData['name'] ?? '');
     $generation = trim($postData['generation'] ?? '');
     $category = trim($postData['category'] ?? '');
     $description = trim($postData['description'] ?? '');
     $type = array_filter(array_map('trim', $postData['type'] ?? [])); // Исправлено: types вместо type
     $abilities = array_values(array_filter(array_map('trim', $postData['abilities'] ?? []), fn($s) => $s !== ''));
-    $weaknesses = array_filter(array_map('trim', $postData['weaknesses'] ?? []));
-    $imageUrl = null;
-    $image = $_FILES['image'] ?? null;
+    $weaknesses = array_filter(array_map('trim', $postData['weaknesses'] ?? [])); // Получаем слабости
 
-    $errors = validatePokemon($name, $type, $generation, $category, $description, $weaknesses, $image, $abilities);
+    // Получаем все имена покемонов из базы данных
+    $existingNames = getAllPokemonNames($pdo); // функция, которая делает SELECT name FROM pokemon
 
-    if ($image && $image['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = __DIR__ . '/../../../public/assets/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-    
-        $filename = uniqid('poke_', true) . '.' . pathinfo($image['name'], PATHINFO_EXTENSION);
-        $destination = $uploadDir . $filename;
-    
-        if (move_uploaded_file($image['tmp_name'], $destination)) {
-            $imageUrl = 'public/assets/' . $filename;
-        } else {
-            $errors['image'] = 'Failed to save the uploaded image.';
-        }
-    } elseif ($image && $image['error'] !== UPLOAD_ERR_NO_FILE) {
-        // Ошибка при загрузке файла (но файл был передан)
-        $errors['image'] = 'Error uploading image (code ' . $image['error'] . ').';
-    } else {
-        // Файл не выбран вовсе
-        $errors['image'] = 'Please upload an image.';
+    // Обработка изображения (должна быть ДО валидации!)
+    $imageName = null;
+    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        $imageTmpPath = $_FILES['image']['tmp_name'];
+        $imageOriginalName = $_FILES['image']['name'];
+        $imageExtension = pathinfo($imageOriginalName, PATHINFO_EXTENSION);
+        $imageName = uniqid() . '.' . $imageExtension;
+        $targetPath = __DIR__ . '/../../../public/assets/' . $imageName;
+
+        move_uploaded_file($imageTmpPath, $targetPath);
     }
+
+    // Валидация данных
+    $errors = validatePokemon($name, $type, $generation, $category, $description, $abilities, $existingNames, $imageName);
 
     if (!empty($errors)) {
         return [
@@ -48,11 +39,12 @@ function createPokemon(PDO $pdo, array $postData): array {
     }
 
     try {
-        // Вставка покемона без столбца weaknesses
+        // Вставляем покемона в таблицу pokemons
         $stmt = $pdo->prepare('
             INSERT INTO pokemons (name, generation, category, description, type, abilities, image, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ');
+
         $stmt->execute([
             $name,
             $generation,
@@ -60,20 +52,21 @@ function createPokemon(PDO $pdo, array $postData): array {
             $description,
             json_encode($type, JSON_UNESCAPED_UNICODE),
             json_encode($abilities, JSON_UNESCAPED_UNICODE),
-            $imageUrl,
+            $imageName,
             date('Y-m-d H:i:s')
         ]);
 
         // Получаем ID только что созданного покемона
         $pokemonId = $pdo->lastInsertId();
 
-        // Вставка слабостей в таблицу pokemon_weaknesses
+        // Вставляем слабости в таблицу pokemon_weaknesses
         if (!empty($weaknesses)) {
             $stmtWeakness = $pdo->prepare('
                 INSERT INTO pokemon_weaknesses (pokemon_id, weakness_id)
                 VALUES (?, ?)
             ');
             foreach ($weaknesses as $weaknessId) {
+                // Для каждой слабости получаем её ID из таблицы weaknesses
                 $stmtWeakness->execute([$pokemonId, $weaknessId]);
             }
         }
@@ -100,4 +93,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $old = $result['data'] ?? [];
 }
 
-
+?>

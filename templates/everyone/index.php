@@ -1,10 +1,5 @@
-<?php 
+<?php ob_start(); ?>
 
-ob_start(); 
-
-?>
-
-<a href="/pokemanager/public/?action=create">...</a>
 <?php if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'admin'): ?>
     <a href="/pokemanager/public/?action=create">
         <button class="nav-button">Create pokemon</button>
@@ -12,62 +7,49 @@ ob_start();
 <?php endif; ?>
 
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
-        margin: 0;
-        padding: 0;
+    .pokemon-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        margin: 30px 0;
+        padding: 0 10px;
+    }
+
+    .pokemon-card {
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+
+    .pokemon-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .pokemon-card img {
+        width: 100%;
+        height: 180px;
+        object-fit: contain;
+        background-color: #f9f9f9;
+        border-bottom: 1px solid #eee;
+    }
+
+    .pokemon-card h3 {
+        margin: 10px 0 5px;
+        font-size: 1.3em;
         color: #333;
     }
 
-    h1, h2, h3, p {
-        margin: 0;
-        padding: 0;
-    }
-
-    a {
-        text-decoration: none;
-        color: #3498db;
-    }
-
-    a:hover {
-        color: #2c3e50;
-    }
-
-
-    ul {
-        list-style: none;
-        padding-left: 0;
-    }
-
-    li {
-        margin: 10px 0;
-        padding: 10px;
-        background-color: #fff;
-        border-radius: 5px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    li a {
-        font-size: 18px;
-        font-weight: bold;
-        color: #3498db;
-    }
-
-    li a:hover {
-        color: #2980b9;
-    }
-
-    p {
-        font-size: 18px;
-        color: #7f8c8d;
-        text-align: center;
-        margin-top: 20px;
+    .pokemon-card p {
+        margin-bottom: 15px;
+        color: #777;
     }
 
     .pagination {
         text-align: center;
-        margin: 20px 0;
+        margin: 30px 0;
     }
 
     .pagination a {
@@ -77,6 +59,7 @@ ob_start();
         color: #3498db;
         border-radius: 5px;
         transition: background-color 0.3s ease;
+        text-decoration: none;
     }
 
     .pagination a:hover {
@@ -89,21 +72,39 @@ ob_start();
         color: white;
         font-weight: bold;
     }
-</style>
 
+    .nav-button {
+        margin: 20px auto;
+        display: block;
+        padding: 10px 20px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .nav-button:hover {
+        background-color: #2980b9;
+    }
+</style>
 
 <?php if (empty($pokemons)): ?>
     <p>Pokemon have gone for a better life.</p>
 <?php else: ?>
-    <ul>
+    <div class="pokemon-grid">
         <?php foreach ($pokemons as $pokemon): ?>
-            <li>
+            <div class="pokemon-card">
                 <a href="/pokemanager/public/?action=show&id=<?= $pokemon['id'] ?>">
-                    <?= htmlspecialchars($pokemon['name']) ?>
-                </a><br>
-            </li>
+                    <img src="/pokemanager/<?= htmlspecialchars($pokemon['image_url']) ?>" alt="<?= htmlspecialchars($pokemon['name']) ?>">
+                </a>
+                <h3><?= htmlspecialchars($pokemon['name']) ?></h3>
+                <p><?= htmlspecialchars($pokemon['type']) ?></p>
+            </div>
         <?php endforeach; ?>
-    </ul>
+    </div>
 <?php endif; ?>
 
 <?php if (!empty($totalPages) && $totalPages > 1): ?>
@@ -117,8 +118,6 @@ ob_start();
 <?php endif; ?>
 
 <?php
-
-$content = ob_get_clean(); 
-include __DIR__ . '/layout.php'; 
-
+$content = ob_get_clean();
+include __DIR__ . '/layout.php';
 ?>

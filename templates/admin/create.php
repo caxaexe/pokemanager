@@ -177,20 +177,14 @@ $weaknesses = $weaknessStmt->fetchAll(PDO::FETCH_ASSOC);
 
 
     <div>
-    <label for="weaknesses">Weaknesses:</label>
-    <select name="weaknesses[]" id="weaknesses" multiple size="5">
+    <label for="weaknesses">Weaknesses</label>
+    <select name="weaknesses[]" multiple id="weaknesses">
         <?php
-        $weaknessStmt = $pdo->query("SELECT id, name FROM weaknesses");
-        $allWeaknesses = $weaknessStmt->fetchAll(PDO::FETCH_ASSOC);
-        $selectedWeaknesses = $data['weaknesses'] ?? [];
+        $stmt = $pdo->query('SELECT * FROM weaknesses');
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            echo "<option value='{$row['id']}'>{$row['name']}</option>";
+        }
         ?>
-
-        <?php foreach ($allWeaknesses as $weakness): ?>
-            <option value="<?= $weakness['id'] ?>"
-                <?= in_array($weakness['id'], $selectedWeaknesses) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($weakness['name']) ?>
-            </option>
-        <?php endforeach; ?>
     </select>
 
     <?php if (isset($errors['weaknesses'])): ?>
@@ -200,15 +194,11 @@ $weaknesses = $weaknessStmt->fetchAll(PDO::FETCH_ASSOC);
     <br>
 
 
-    <div>
-    <label for="image">Pokemon Image:</label>
-    <input type="file" name="image" id="image" accept="image/*">
-
+    <label for="image">Upload Image:</label>
+    <input type="file" name="image" id="image">
     <?php if (!empty($errors['image'])): ?>
-    <p style="color:red"><?= htmlspecialchars($errors['image']) ?></p>
+        <p class="error"><?= htmlspecialchars($errors['image']) ?></p>
     <?php endif; ?>
-    </div>
-    <br>
 
 
     <div id="abilities">

@@ -80,26 +80,33 @@ switch ($action) {
         header('Location: /pokemanager/public/');
         exit;
 
-    case 'home':
-        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-        $limit = 5;
-        $offset = ($page - 1) * $limit;
+        case 'home':
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+            $limit = 5;
+            $offset = ($page - 1) * $limit;
 
+            $stmt = $pdo->prepare("
+                SELECT p.id, p.name, p.image_url, GROUP_CONCAT(t.name SEPARATOR ', ') AS type
+                FROM pokemons p
+                LEFT JOIN types t ON FIND_IN_SET(t.id, p.type) > 0
+                GROUP BY p.id
+                ORDER BY p.name
+                LIMIT :limit OFFSET :offset
+            ");
 
-        $stmt = $pdo->prepare("SELECT * FROM pokemons ORDER BY id DESC LIMIT ? OFFSET ?");
-        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
-        $stmt->bindValue(2, $offset, PDO::PARAM_INT);
-        $stmt->execute();
-        $pokemons = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
 
+            $pokemons = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $countStmt = $pdo->query("SELECT COUNT(*) FROM pokemons");
-        $totalPokemons = (int) $countStmt->fetchColumn();
-        $totalPages = ceil($totalPokemons / $limit);
-
-
-        include __DIR__ . '/../templates/everyone/index.php';
-        break;
+            $countStmt = $pdo->query("SELECT COUNT(*) FROM pokemons");
+            $totalPokemons = (int) $countStmt->fetchColumn();
+            $totalPages = ceil($totalPokemons / $limit);
+        
+            include __DIR__ . '/../templates/everyone/index.php';
+            break;
+        
 
 
     default:
