@@ -118,6 +118,7 @@
 
 <header>
 <nav>
+    <!-- Навигация по страницам -->
     <a href="/pokemanager/public/index.php"><button class="nav-button">Home</button></a>
 
     <?php if (!isset($_SESSION['user'])): ?>
@@ -135,10 +136,12 @@
 </header>
 
 <main>
+    <!-- Контент страницы, переданный через переменную $content -->
     <?= $content ?? '' ?>
 </main>
 
 <footer>
+    <!-- Подвал страницы -->
     <p>&copy; pupupup</p>
 </footer>
 </body>

@@ -2,44 +2,83 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../src/helpers.php';
 
-
 // Проверка подключения к базе данных
 if (!isset($pdo)) {
     die("Подключение к базе данных не установлено!");
 }
 
-// Функция для получения ID из GET-параметров
-function getIdFromRequest() {
+/**
+ * Получает ID из параметра запроса GET.
+ *
+ * @return int|null ID, если указан, или null.
+ */
+function getIdFromRequest(): ?int {
     return isset($_GET['id']) ? (int)$_GET['id'] : null;
 }
 
-// Функция для обработки ошибок
-function handleError($message) {
+/**
+ * Обрабатывает ошибку, отправляя 404 и сообщение.
+ *
+ * @param string $message Сообщение об ошибке.
+ * @return void
+ */
+function handleError(string $message): void {
     http_response_code(404);
     echo $message;
     exit;
 }
 
+// Определение действия, запрошенного пользователем
 $action = $_GET['action'] ?? 'home';
 
 switch ($action) {
+
     case 'create':
-        if (file_exists(__DIR__ . '/../src/handlers/admin/create.php')) {
-            require_once __DIR__ . '/../src/handlers/admin/create.php';
-        } else {
-            handleError('Создание покемона невозможно.');
+        require_once __DIR__ . '/../src/handlers/admin/create.php';
+        break;
+
+    case 'plz_8':
+        // Пример защиты маршрута по роли
+        if ($_SESSION['role'] === 'admin') {
+            header('Location: /welcome.php');
         }
         break;
 
     case 'edit':
         $id = getIdFromRequest();
         if (!$id) {
-            handleError("No Pokémon ID provided.");
+            handleError("No Pokemon ID provided.");
         }
+
         $pokemon = getPokemonById($pdo, $id);
         if (!$pokemon) {
             handleError("Pokemon not found.");
         }
+
+        $errors = [];
+
+        // Обработка отправки формы редактирования
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $name = $_POST['name'] ?? '';
+            $errors = validatePokemonName($name);
+
+            if (empty($errors)) {
+                $stmt = $pdo->prepare("UPDATE pokemons SET name = ? WHERE id = ?");
+                $stmt->execute([$name, $id]);
+
+                if ($stmt->rowCount() > 0) {
+                    header("Location: /pokemanager/public/?action=show&id=$id");
+                    exit;
+                } else {
+                    $errors['name'] = "Name not changed (maybe same as current).";
+                }
+
+                $pokemon['name'] = $name;
+            } else {
+                $pokemon['name'] = $name;
+            }
+        }
+
         include __DIR__ . '/../templates/admin/edit.php';
         break;
 

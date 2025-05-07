@@ -1,31 +1,81 @@
 <?php
 
-function isLoggedIn() {
+/**
+ * Проверяет, вошел ли пользователь в систему.
+ *
+ * @return bool
+ */
+function isLoggedIn(): bool {
     return isset($_SESSION['user']);
 }
 
-function isAdmin() {
+/**
+ * Проверяет, является ли текущий пользователь администратором.
+ *
+ * @return bool
+ */
+function isAdmin(): bool {
     return isLoggedIn() && $_SESSION['user']['role'] === 'admin';
 }
 
-function requireLogin() {
+/**
+ * Требует авторизации пользователя, иначе выполняет редирект.
+ *
+ * @return void
+ */
+function requireLogin(): void {
     if (!isLoggedIn()) {
         header("Location: /pokemanager/public/login.php");
         exit;
     }
 }
 
-function requireAdmin() {
+/**
+ * Требует, чтобы пользователь был администратором, иначе выполняет редирект.
+ *
+ * @return void
+ */
+function requireAdmin(): void {
     if (!isAdmin()) {
         header("Location: /pokemanager/public/?action=home");
         exit;
     }
 }
 
+/**
+ * Проверяет корректность имени покемона.
+ *
+ * @param string $name
+ * @return array Массив ошибок
+ */
+function validatePokemonName($name): array {
+    $errors = [];
+
+    if (empty($name)) {
+        $errors['name'] = 'Имя не может быть пустым.';
+    } elseif (strlen($name) < 2) {
+        $errors['name'] = 'Имя должно быть не короче 2 символов.';
+    }
+
+    return $errors;
+}
+
+/**
+ * Проверяет все поля покемона на валидность.
+ *
+ * @param string $name
+ * @param array $type
+ * @param string $generation
+ * @param string $category
+ * @param string $description
+ * @param array $abilities
+ * @param array $existingNames
+ * @param string|null $imageName
+ * @return array Массив ошибок
+ */
 function validatePokemon($name, $type, $generation, $category, $description, $abilities, $existingNames, $imageName): array {
     $errors = [];
 
-    // Проверка имени
     if (empty($name)) {
         $errors['name'] = "Pokemon name is required.";
     } elseif (strlen($name) < 3) {
@@ -34,49 +84,41 @@ function validatePokemon($name, $type, $generation, $category, $description, $ab
         $errors['name'] = "A Pokemon with that name already exists.";
     }
 
-    // Проверка типов
     if (empty($type) || !is_array($type)) {
         $errors['type'] = "At least one type must be specified.";
     } elseif (count($type) > 2) {
         $errors['type'] = "You can select up to 2 types.";
     }
 
-    // Проверка поколения
     if (empty($generation)) {
         $errors['generation'] = "Generation is required.";
     } elseif (!is_numeric($generation) || (int)$generation < 1) {
         $errors['generation'] = "Generation must be a number greater than 0.";
     }
 
-    // Проверка категории (опционально)
     if (!empty($category) && strlen($category) > 255) {
         $errors['category'] = "Category is too long.";
     }
 
-    // Проверка описания
     if (empty($description)) {
         $errors['description'] = "Description is required.";
     } elseif (strlen($description) < 10) {
         $errors['description'] = "The description must be at least 10 characters long.";
     }
 
-    // Проверка способностей
     if (empty($abilities) || !is_array($abilities) || count(array_filter($abilities)) === 0) {
         $errors['abilities'] = "At least one ability must be specified.";
-    }
-
-    // Проверка изображения (опционально для теста)
-    // if (!$imageName) {
-    //     $errors['image'] = "Image not loaded.";
-    // }
-
-    if (!empty($errors)) {
-        error_log("Validation errors: " . print_r($errors, true));
     }
 
     return $errors;
 }
 
+/**
+ * Получает все имена покемонов из базы данных.
+ *
+ * @param PDO $pdo
+ * @return array Массив имен покемонов
+ */
 function getAllPokemonNames(PDO $pdo): array {
     try {
         $stmt = $pdo->query("SELECT name FROM pokemons");
@@ -87,6 +129,13 @@ function getAllPokemonNames(PDO $pdo): array {
     }
 }
 
+/**
+ * Получает информацию о покемоне по его ID.
+ *
+ * @param PDO $pdo
+ * @param int $id
+ * @return array|null Ассоциативный массив данных покемона или null, если не найден
+ */
 function getPokemonById(PDO $pdo, int $id): ?array {
     $stmt = $pdo->prepare("SELECT * FROM pokemons WHERE id = ?");
     $stmt->execute([$id]);
@@ -96,11 +145,11 @@ function getPokemonById(PDO $pdo, int $id): ?array {
         if (isset($pokemon['type']) && is_string($pokemon['type'])) {
             $pokemon['type'] = array_filter(array_map('trim', explode(',', $pokemon['type'])));
         }
-        
-        if (isset($pokemon['generations']) && is_string($pokemon['generations'])) {
-            $pokemon['generations'] = array_filter(array_map('trim', explode(',', $pokemon['generations'])));
+
+        if (isset($pokemon['generation']) && is_string($pokemon['generation'])) {
+            $pokemon['generation'] = trim($pokemon['generation']);
         }
-        
+
         if (isset($pokemon['abilities']) && is_string($pokemon['abilities'])) {
             $pokemon['abilities'] = json_decode($pokemon['abilities'], true);
         }

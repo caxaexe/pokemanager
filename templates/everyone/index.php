@@ -1,12 +1,13 @@
 <?php ob_start(); ?>
 
 <?php if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'admin'): ?>
+    <!-- Если пользователь авторизован как администратор, отображаем кнопку для создания покемона -->
     <a href="/pokemanager/public/?action=create">
         <button class="nav-button">Create pokemon</button>
     </a>
 <?php endif; ?>
 
-<link rel="stylesheet" href="./css/styles.css">
+
 <style>
     .pokemon-grid {
         display: grid;
@@ -74,16 +75,17 @@
         font-weight: bold;
     }
 
-  
-    }
+
 </style>
 
 <?php if (empty($pokemons)): ?>
+    <!-- Если список покемонов пуст, выводим сообщение -->
     <p>Pokemon have gone for a better life.</p>
 <?php else: ?>
     <div class="pokemon-grid">
         <?php foreach ($pokemons as $pokemon): ?>
             <div class="pokemon-card">
+                <!-- Ссылка на страницу покемона -->
                 <a href="/pokemanager/public/?action=show&id=<?= $pokemon['id'] ?>">
                     <img src="/pokemanager/<?= htmlspecialchars($pokemon['image_url']) ?>" alt="<?= htmlspecialchars($pokemon['name']) ?>">
                 </a>
@@ -95,6 +97,7 @@
 <?php endif; ?>
 
 <?php if (!empty($totalPages) && $totalPages > 1): ?>
+    <!-- Если есть несколько страниц, отображаем пагинацию -->
     <nav class="pagination">
         <?php for ($p = 1; $p <= $totalPages; $p++): ?>
             <a href="?page=<?= $p ?>" <?= $p == $page ? 'style="font-weight:bold;"' : '' ?>>
@@ -105,6 +108,9 @@
 <?php endif; ?>
 
 <?php
+/**
+ * Собираем содержимое страницы и подключаем основной layout.
+ */
 $content = ob_get_clean();
 include __DIR__ . '/layout.php';
 ?>

@@ -1,4 +1,5 @@
 <?php if (isset($_GET['error'])): ?>
+    <!-- Если есть ошибка в GET параметре, выводим сообщение об ошибке -->
     <div style="color: red; background-color: #fee; padding: 10px; border: 1px solid red; margin-bottom: 15px;">
         <?= htmlspecialchars($_GET['error']) ?>
     </div>
@@ -102,6 +103,9 @@
 <p>Don't have an account? <a href="register.php">Register</a></p>
 
 <?php
+/**
+ * Сборка содержимого страницы и подключение основного layout.
+ */
 $content = ob_get_clean();
 include __DIR__ . '/../everyone/layout.php';
 ?>

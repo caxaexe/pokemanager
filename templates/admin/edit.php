@@ -1,22 +1,45 @@
-<?php
+<<?php
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../src/helpers.php';
 
+/**
+ * Подключение к базе данных.
+ *
+ * @var PDO $pdo
+ */
 $pdo = getPdoConnection();
 
+/**
+ * Получение ID покемона из параметра запроса.
+ *
+ * @var int|null $id
+ */
+$id = $_GET['id'] ?? null;
+if (!$id) {
+    die("Missing Pokemon ID.");
+}
 
-$typeStmt = $pdo->query('SELECT id, name FROM types');
-$types = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
+/**
+ * Получение данных покемона по ID.
+ *
+ * @var array|false $pokemon
+ */
+$stmt = $pdo->prepare('SELECT id, name FROM pokemons WHERE id = ?');
+$stmt->execute([$id]);
+$pokemon = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$generationStmt = $pdo->query('SELECT id, name FROM generations');
-$generations = $generationStmt->fetchAll(PDO::FETCH_ASSOC);
-
-$weaknessStmt = $pdo->query('SELECT id, name FROM weaknesses');
-$weaknesses = $weaknessStmt->fetchAll(PDO::FETCH_ASSOC);
+/**
+ * Имя покемона для предзаполнения формы.
+ *
+ * @var string $name
+ */
+$name = $pokemon['name'] ?? '';
 
 ob_start();
 ?>
-<link rel="stylesheet" href="./css/styles.css">
+
+
 <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -36,7 +59,7 @@ ob_start();
         padding: 25px;
         border-radius: 10px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        max-width: 600px;
+        max-width: 400px;
         margin: 0 auto;
     }
 
@@ -47,9 +70,7 @@ ob_start();
         color: #34495e;
     }
 
-    input[type="text"],
-    textarea,
-    select {
+    input[type="text"] {
         width: 100%;
         padding: 10px;
         margin-top: 5px;
@@ -60,24 +81,16 @@ ob_start();
         background-color: #fafafa;
     }
 
-    textarea {
-        min-height: 80px;
-        resize: vertical;
-    }
-
-    input[type="file"] {
-        margin-top: 8px;
-    }
-
     .error {
-        color: #e74c3c;
+        color: red;
         font-size: 0.9em;
         margin-top: 5px;
     }
 
     button[type="submit"],
-    button[type="button"] {
+    .cancel-button {
         margin-top: 20px;
+        display: inline-block;
         background-color: #3498db;
         color: white;
         border: none;
@@ -85,34 +98,18 @@ ob_start();
         border-radius: 8px;
         cursor: pointer;
         font-size: 16px;
+        text-decoration: none;
         transition: background-color 0.3s ease;
     }
 
-    button:hover {
+    button:hover,
+    .cancel-button:hover {
         background-color: #2980b9;
     }
 
-    select[multiple] {
-        height: auto;
-        min-height: 100px;
-    }
-
-    #abilities textarea {
-        margin-top: 8px;
-    }
-
     .cancel-button {
-        display: inline-block;
-        margin-top: 20px;
         background-color: #e74c3c;
-        color: white;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 16px;
-        text-decoration: none; /* Убираем подчеркивание */
-        text-align: center;
+        margin-left: 10px;
     }
 
     .cancel-button:hover {
@@ -120,135 +117,24 @@ ob_start();
     }
 </style>
 
-<h2>Edit Pokemon</h2>
+<h2>Edit Pokemon Name</h2>
 
-<form action="/pokemanager/public/?action=edit&id=<?= $id ?>" method="post" enctype="multipart/form-data">
-<div>
+<form action="/pokemanager/public/?action=edit&id=<?= $pokemon['id'] ?>" method="post">
     <label for="name">Name:</label>
-    <input type="text" name="name" id="name" value="<?= htmlspecialchars($data['name'] ?? '') ?>">
+    <input type="text" name="name" id="name" value="<?= htmlspecialchars($pokemon['name'] ?? '') ?>">
     <?php if (!empty($errors['name'])): ?>
         <p style="color:red"><?= htmlspecialchars($errors['name']) ?></p>
     <?php endif; ?>
-    </div>
     <br>
-
-    <div>
-    <label for="type">Type(choose up to 2):</label>
-    <select name="type[]" id="type" multiple size="5">
-        <?php
-        $typeStmt = $pdo->query("SELECT id, name FROM types");
-        $allTypes = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
-        $selectedTypes = $data['type'] ?? [];
-        ?>
-
-        <?php foreach ($allTypes as $type): ?>
-            <option value="<?= $type['id'] ?>"
-                <?= in_array($type['id'], $selectedTypes) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($type['name']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-
-    <?php if (isset($errors['type'])): ?>
-        <p class="error"><?= htmlspecialchars($errors['type']) ?></p>
-    <?php endif; ?>
-    </div>
-    <br>
-
-
-    <div>
-    <label for="generation">Generation:</label>
-    <select name="generation" id="generation">
-        <option value="">Select generation</option>
-        <?php foreach ($generations as $gen): ?>
-            <option value="<?= $gen['id'] ?>" <?= ($data['generation'] ?? '') == $gen['id'] ? 'selected' : '' ?>>
-                <?= htmlspecialchars($gen['name']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-
-    <?php if (!empty($errors['generation'])): ?>
-        <p style="color:red"><?= htmlspecialchars($errors['generation']) ?></p>
-    <?php endif; ?>
-    </div>
-    <br>
-
-
-    <div>
-    <label for="category">Category:</label>
-    <input type="text" name="category" id="category" value="<?= htmlspecialchars($data['category'] ?? '') ?>">
-    <?php if (!empty($errors['category'])): ?>
-        <p style="color:red"><?= htmlspecialchars($errors['category']) ?></p>
-    <?php endif; ?>
-    <br>
-
-
-    <div>
-    <label for="description">Description:</label>
-    <textarea name="description" id="description"><?= htmlspecialchars($data['description'] ?? '') ?></textarea>
-    <?php if (!empty($errors['description'])): ?>
-        <p style="color:red"><?= htmlspecialchars($errors['description']) ?></p>
-    <?php endif; ?>
-    </div>
-    <br>
-
-
-    <div>
-    <label for="weaknesses">Weaknesses</label>
-    <select name="weaknesses[]" multiple id="weaknesses">
-        <?php
-        $stmt = $pdo->query('SELECT * FROM weaknesses');
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            echo "<option value='{$row['id']}'>{$row['name']}</option>";
-        }
-        ?>
-    </select>
-
-    <?php if (isset($errors['weaknesses'])): ?>
-        <p class="error"><?= htmlspecialchars($errors['weaknesses']) ?></p>
-    <?php endif; ?>
-    </div>
-    <br>
-
-    <div>
-    <label for="image">Upload Image:</label>
-    <input type="file" name="image" id="image">
-    <?php if (!empty($errors['image'])): ?>
-        <p class="error"><?= htmlspecialchars($errors['image']) ?></p>
-    <?php endif; ?>
-    </div>
-     
-
-    <div id="abilities">
-    <label>Abilities:</label><br>
-        <?php
-        $abilityData = $data['abilities'] ?? [''];
-        foreach ($abilityData as $abilityText):
-        ?>
-            <textarea name="abilities[]" placeholder="Enter ability"><?= htmlspecialchars($abilityText) ?></textarea><br>
-        <?php endforeach; ?>
-    </div>
-    <?php if (!empty($errors['abilities'])): ?>
-        <p style="color:red"><?= htmlspecialchars($errors['abilities']) ?></p>
-    <?php endif; ?>
-
-    <button type="button" onclick="addAbility()">Enter ability</button><br><br>
-
     <button type="submit">Update</button>
-    <a href="index.php" class="button cancel-button">Cancel</a>
+    <a href="index.php" class="cancel-button">Cancel</a>
 </form>
 
-<script>
-    function addAbility() {
-        const container = document.getElementById('abilities');
-        const textarea = document.createElement('textarea');
-        textarea.name = 'abilities[]';
-        container.appendChild(textarea);
-        container.appendChild(document.createElement('br'));
-    }
-</script>
 
 <?php
+/**
+ * Вывод содержимого формы с layout.
+ */
 $content = ob_get_clean();
 include __DIR__ . '/../everyone/layout.php';
 ?>

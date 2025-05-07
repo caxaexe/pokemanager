@@ -1,10 +1,21 @@
 <?php
 
-
+/**
+ * Получаем категорию покемона.
+ * Если категория не указана, используется значение по умолчанию "Не указана".
+ */
 $category = $pokemon['category'] ?? 'Не указана';
 
-// Получаем типы
+/**
+ * Получаем типы покемона.
+ * Если типы указаны в виде строки, преобразуем их в массив.
+ * Если типы отсутствуют, устанавливаем пустой массив.
+ */
 $type = is_array($pokemon['type']) ? $pokemon['type'] : (empty($pokemon['type']) ? [] : explode(',', $pokemon['type']));
+
+/**
+ * Если типы покемона указаны, получаем их имена из базы данных.
+ */
 if (!empty($type)) {
     $placeholders = str_repeat('?,', count($type) - 1) . '?';
     $typeStmt = $pdo->prepare("SELECT name FROM types WHERE id IN ($placeholders)");
@@ -14,7 +25,9 @@ if (!empty($type)) {
     $typeNames = [];
 }
 
-// Поколение
+/**
+ * Получаем поколение покемона по его ID.
+ */
 $generationId = $pokemon['generation'] ?? null;
 $generation = '';
 if ($generationId) {
@@ -23,7 +36,11 @@ if ($generationId) {
     $generation = $stmt->fetchColumn();
 }
 
-// Слабости
+/**
+ * Получаем слабости покемона.
+ * Если слабости указаны в виде строки, преобразуем их в массив.
+ * Если слабости отсутствуют, устанавливаем пустой массив.
+ */
 $weaknesses = is_array($pokemon['weaknesses']) ? $pokemon['weaknesses'] : explode(',', $pokemon['weaknesses'] ?? '');
 $weaknessNames = [];
 if (!empty($weaknesses)) {
@@ -33,118 +50,123 @@ if (!empty($weaknesses)) {
     $weaknessNames = $stmt->fetchAll(PDO::FETCH_COLUMN);
 }
 
+/**
+ * Преобразуем слабости в строку.
+ * Если слабости отсутствуют, устанавливаем значение "Не указаны".
+ */
 $weaknessesList = !empty($weaknessNames) ? implode(', ', $weaknessNames) : 'Не указаны';
 
-// Способности
+/**
+ * Получаем способности покемона.
+ * Если способности указаны в виде строки, преобразуем их в массив.
+ */
 $abilities = is_array($pokemon['abilities']) ? $pokemon['abilities'] : explode('|', $pokemon['abilities'] ?? '');
 
 ?>
 <style>
     body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f2f7fa;
-    color: #333;
-    padding: 20px;
-    margin: 0;
-    box-sizing: border-box;
-}
-
-h2 {
-    text-align: center;
-    color: #2c3e50;
-    margin-bottom: 20px;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.pokemon-view {
-    background: #fff;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    max-width: 700px;
-    margin: 20px auto;
-    font-size: 16px;
-    line-height: 1.6;
-}
-
-p {
-    margin: 10px 0;
-}
-
-strong {
-    color: #34495e;
-}
-
-img {
-    max-width: 200px;
-    height: auto;
-    display: block;
-    margin: 10px auto;
-    border-radius: 8px;
-    /* border: 2px solid #ddd; */
-}
-
-ul, ol {
-    margin-left: 20px;
-    padding-left: 0;
-    list-style-type: none;
-}
-
-ul li, ol li {
-    padding-left: 20px;
-    position: relative;
-}
-
-ul li::before, ol li::before {
-    position: absolute;
-    left: 0;
-    color: #3498db;
-    font-size: 20px;
-}
-
-.actions {
-    margin-top: 20px;
-    text-align: center;
-}
-
-.actions a {
-    margin: 0 10px;
-    background-color: #3498db;
-    color: white;
-    padding: 10px 16px;
-    border-radius: 6px;
-    text-decoration: none;
-    transition: background-color 0.3s;
-    font-weight: bold;
-}
-
-.actions a:hover {
-    background-color: #2980b9;
-}
-
-@media (max-width: 768px) {
-    .pokemon-view {
-        padding: 15px;
-        width: 90%;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #f2f7fa;
+        color: #333;
+        padding: 20px;
+        margin: 0;
+        box-sizing: border-box;
     }
 
     h2 {
-        font-size: 24px;
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .pokemon-view {
+        background: #fff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        max-width: 700px;
+        margin: 20px auto;
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    p {
+        margin: 10px 0;
+    }
+
+    strong {
+        color: #34495e;
     }
 
     img {
-        max-width: 150px;
+        max-width: 200px;
+        height: auto;
+        display: block;
+        margin: 10px auto;
+        border-radius: 8px;
     }
-}
 
+    ul, ol {
+        margin-left: 20px;
+        padding-left: 0;
+        list-style-type: none;
+    }
+
+    ul li, ol li {
+        padding-left: 20px;
+        position: relative;
+    }
+
+    ul li::before, ol li::before {
+        position: absolute;
+        left: 0;
+        color: #3498db;
+        font-size: 20px;
+    }
+
+    .actions {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .actions a {
+        margin: 0 10px;
+        background-color: #3498db;
+        color: white;
+        padding: 10px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background-color 0.3s;
+        font-weight: bold;
+    }
+
+    .actions a:hover {
+        background-color: #2980b9;
+    }
+
+    @media (max-width: 768px) {
+        .pokemon-view {
+            padding: 15px;
+            width: 90%;
+        }
+
+        h2 {
+            font-size: 24px;
+        }
+
+        img {
+            max-width: 150px;
+        }
+    }
 </style>
 
 <div class="pokemon-view">
     <h2><?= htmlspecialchars($pokemon['name']) ?></h2>
 
     <?php if (!empty($pokemon['image_url'])): ?>
-    <img src="/pokemanager/public/assets/<?= htmlspecialchars(basename($pokemon['image_url'])) ?>" alt="Pokemon Image">
+        <img src="/pokemanager/public/assets/<?= htmlspecialchars(basename($pokemon['image_url'])) ?>" alt="Pokemon Image">
     <?php else: ?>
         <p>Image not found.</p>
     <?php endif; ?>
@@ -175,8 +197,10 @@ ul li::before, ol li::before {
     </div>
 </div>
 
-
 <?php
 $content = ob_get_clean();
+/**
+ * Подключаем основной шаблон с переданным контентом.
+ */
 include __DIR__ . '/../everyone/layout.php';
 ?>

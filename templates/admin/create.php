@@ -2,22 +2,34 @@
 
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../src/helpers.php';
 
-// if (!isLoggedIn() || !isAdmin()) {
-//     error_log("User not logged in or not admin in template");
-//     $_SESSION['error'] = 'You must be an admin to create Pokémon';
-//     header('Location: /pokemanager/public/login.php');
-//     exit;
-// }
-
+/**
+ * Получение подключения к базе данных.
+ *
+ * @var PDO $pdo
+ */
 $pdo = getPdoConnection();
 
+/**
+ * Получение ошибок и старых данных из сессии.
+ *
+ * @var array $errors
+ * @var array $data
+ */
 $errors = $_SESSION['errors'] ?? [];
 $data = $_SESSION['old'] ?? [];
 error_log("Errors in template: " . print_r($errors, true));
 unset($_SESSION['errors'], $_SESSION['old']);
 
 try {
+    /**
+     * Загрузка справочных данных для формы: типы, поколения, слабости.
+     *
+     * @var array $types
+     * @var array $generations
+     * @var array $weaknesses
+     */
     $typeStmt = $pdo->query('SELECT id, name FROM types');
     $types = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -34,6 +46,7 @@ try {
 
 ob_start();
 ?>
+
 <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -119,7 +132,7 @@ ob_start();
     <p class="error"><?= htmlspecialchars($errors['database']) ?></p>
 <?php endif; ?>
 
-<form action="/pokemanager/public/?action=create" method="post" enctype="multipart/form-data">
+<form action="/pokemanager/public/index.php?action=create" method="post" enctype="multipart/form-data">
     <div>
         <label for="name">Name:</label>
         <input type="text" name="name" id="name" value="<?= htmlspecialchars($data['name'] ?? '') ?>">
@@ -222,6 +235,9 @@ ob_start();
 </form>
 
 <script>
+    /**
+     * Добавляет новое поле textarea для способностей.
+     */
     function addAbility() {
         const newAbility = document.createElement('textarea');
         newAbility.name = 'abilities[]';
@@ -230,6 +246,9 @@ ob_start();
         document.getElementById('abilities').appendChild(document.createElement('br'));
     }
 
+    /**
+     * Ограничивает выбор типов до двух.
+     */
     const typeSelect = document.getElementById('type');
     typeSelect.addEventListener('change', function () {
         const selectedOptions = Array.from(this.selectedOptions);
@@ -241,6 +260,10 @@ ob_start();
 </script>
 
 <?php
+/**
+ * Буферизированный вывод страницы с формой помещается в переменную $content,
+ * после чего подключается основной layout.
+ */
 $content = ob_get_clean();
 include __DIR__ . '/../everyone/layout.php';
 ?>
