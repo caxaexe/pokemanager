@@ -210,13 +210,14 @@ ob_start();
     </div>
     <br>
 
-
+    <div>
     <label for="image">Upload Image:</label>
     <input type="file" name="image" id="image">
     <?php if (!empty($errors['image'])): ?>
         <p class="error"><?= htmlspecialchars($errors['image']) ?></p>
     <?php endif; ?>
-
+    </div>
+     
 
     <div id="abilities">
     <label>Abilities:</label><br>

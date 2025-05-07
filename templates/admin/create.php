@@ -1,11 +1,5 @@
 <?php
 
-error_log("Reached create template");
-
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 
@@ -114,7 +108,7 @@ ob_start();
     }
 </style>
 
-<h2>Create your own Pokémon</h2>
+<h2>Create your own Pokemon</h2>
 
 <?php if (isset($_SESSION['success'])): ?>
     <p style="color: green;"><?= htmlspecialchars($_SESSION['success']) ?></p>

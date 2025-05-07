@@ -97,7 +97,7 @@ function createPokemon(PDO $pdo, array $postData, array $files): array {
         ]);
 
         $pokemonId = $pdo->lastInsertId();
-        error_log("Pokémon created with ID: $pokemonId");
+        error_log("Pokemon created with ID: $pokemonId");
 
         if (!empty($weaknessIds)) {
             $stmtWeakness = $pdo->prepare('INSERT INTO pokemon_weaknesses (pokemon_id, weakness_id) VALUES (?, ?)');

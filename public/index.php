@@ -2,11 +2,21 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../src/helpers.php';
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+
+// Проверка подключения к базе данных
 if (!isset($pdo)) {
-    echo "Подключение к базе данных не установлено!";
+    die("Подключение к базе данных не установлено!");
+}
+
+// Функция для получения ID из GET-параметров
+function getIdFromRequest() {
+    return isset($_GET['id']) ? (int)$_GET['id'] : null;
+}
+
+// Функция для обработки ошибок
+function handleError($message) {
+    http_response_code(404);
+    echo $message;
     exit;
 }
 
@@ -14,46 +24,41 @@ $action = $_GET['action'] ?? 'home';
 
 switch ($action) {
     case 'create':
-        // Просто включаем обработчик, он сам управляет редиректами
-        require_once __DIR__ . '/../src/handlers/admin/create.php';
+        if (file_exists(__DIR__ . '/../src/handlers/admin/create.php')) {
+            require_once __DIR__ . '/../src/handlers/admin/create.php';
+        } else {
+            handleError('Создание покемона невозможно.');
+        }
         break;
 
     case 'edit':
-        require_once __DIR__ . '/../src/handlers/admin/edit.php';
-        $id = $_GET['id'] ?? null;
+        $id = getIdFromRequest();
         if (!$id) {
-            http_response_code(404);
-            echo "No Pokémon ID provided.";
-            exit;
+            handleError("No Pokémon ID provided.");
         }
         $pokemon = getPokemonById($pdo, $id);
         if (!$pokemon) {
-            http_response_code(404);
-            echo "Pokémon not found.";
-            exit;
+            handleError("Pokemon not found.");
         }
         include __DIR__ . '/../templates/admin/edit.php';
         break;
 
     case 'show':
-        $id = $_GET['id'] ?? null;
+        $id = getIdFromRequest();
         if (!$id) {
-            echo "No Pokémon ID provided.";
-            exit;
+            handleError("No Pokémon ID provided.");
         }
         $pokemon = getPokemonById($pdo, $id);
         if (!$pokemon) {
-            http_response_code(404);
-            echo "Pokemon not found.";
-            exit;
+            handleError("Pokemon not found.");
         }
         include __DIR__ . '/../templates/everyone/show.php';
         break;
 
     case 'delete':
-        require_once __DIR__ . '/../src/handlers/admin/delete.php';
-        $id = $_GET['id'] ?? null;
+        $id = getIdFromRequest();
         if ($id) {
+            require_once __DIR__ . '/../src/handlers/admin/delete.php';
             deletePokemon($pdo, $id);
         }
         header('Location: /pokemanager/public/');
@@ -64,25 +69,28 @@ switch ($action) {
         $limit = 5;
         $offset = ($page - 1) * $limit;
 
-        $stmt = $pdo->prepare("
-            SELECT p.id, p.name, p.image_url, GROUP_CONCAT(t.name SEPARATOR ', ') AS type
-            FROM pokemons p
-            LEFT JOIN types t ON FIND_IN_SET(t.id, p.type) > 0
-            GROUP BY p.id
-            ORDER BY p.name
-            LIMIT :limit OFFSET :offset
-        ");
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
+        try {
+            $stmt = $pdo->prepare("
+                SELECT p.id, p.name, p.image_url, GROUP_CONCAT(t.name SEPARATOR ', ') AS type
+                FROM pokemons p
+                LEFT JOIN types t ON FIND_IN_SET(t.id, p.type) > 0
+                GROUP BY p.id
+                ORDER BY p.name
+                LIMIT :limit OFFSET :offset
+            ");
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            $pokemons = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $pokemons = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $countStmt = $pdo->query("SELECT COUNT(*) FROM pokemons");
+            $totalPokemons = (int)$countStmt->fetchColumn();
+            $totalPages = ceil($totalPokemons / $limit);
 
-        $countStmt = $pdo->query("SELECT COUNT(*) FROM pokemons");
-        $totalPokemons = (int)$countStmt->fetchColumn();
-        $totalPages = ceil($totalPokemons / $limit);
-
-        include __DIR__ . '/../templates/everyone/index.php';
+            include __DIR__ . '/../templates/everyone/index.php';
+        } catch (PDOException $e) {
+            handleError("Ошибка выполнения запроса: " . $e->getMessage());
+        }
         break;
 
     default:

@@ -40,8 +40,8 @@
     }
 
     .nav-button {
-        background-color: #DCDA87; /* Новый цвет кнопки */
-        color: #333; /* Цвет текста */
+        background-color: #DCDA87;
+        color: #333;
         border: none;
         padding: 10px 20px;
         border-radius: 6px;
@@ -51,7 +51,7 @@
     }
 
     .nav-button:hover {
-        background-color: #b5b67a; /* Цвет при наведении */
+        background-color: #b5b67a;
         color: #5e3370;
     }
 
@@ -93,12 +93,12 @@
     }
 
     .cancel-button:hover {
-        background-color:rgb(216, 216, 170);
+        background-color: rgb(216, 216, 170);
         color: #5e3370;
     }
 
     .submit-button {
-        background-color:rgb(252, 252, 229);
+        background-color: rgb(252, 252, 229);
         color: #333;
         padding: 12px 20px;
         border-radius: 8px;
@@ -113,38 +113,33 @@
     }
 </style>
 
-
 </head>
 <body>
 
 <header>
 <nav>
-    <a href="index.php"><button class="nav-button">Home</button></a>
+    <a href="/pokemanager/public/index.php"><button class="nav-button">Home</button></a>
 
     <?php if (!isset($_SESSION['user'])): ?>
-        <a href="login.php"><button class="nav-button">Login</button></a>
-        <a href="register.php"><button class="nav-button">Register</button></a>
-        <a href="../templates/admin/create.php"><button class="nav-button">Add Pokemon</button></a>
+        <a href="/pokemanager/public/login.php"><button class="nav-button">Login</button></a>
+        <a href="/pokemanager/public/register.php"><button class="nav-button">Register</button></a>
+        <a href="/pokemanager/public/?action=create"><button class="nav-button">Add Pokemon</button></a>
     <?php else: ?>
         <span style="color: #8e44ad; padding: 8px 10px;">
             <?= htmlspecialchars($_SESSION['user']['email']) ?>
         </span>
-        <!-- <?php if ($_SESSION['user']['role'] === 'admin'): ?> -->
-            <!-- <a href="/templates/admin/create.php"><button class="nav-button">Add Pokemon</button></a> -->
-        <!-- <?php endif; ?> -->
-        <a href="/logout.php"><button class="nav-button">Logout</button></a>
+        <a href="/pokemanager/public/logout.php"><button class="nav-button">Logout</button></a>
     <?php endif; ?>
 </nav>
     <h1>PokeManager</h1>
 </header>
 
+<main>
+    <?= $content ?? '' ?>
+</main>
 
-    <main>
-        <?= $content ?? '' ?>
-    </main>
-
-    <footer>
-        <p>&copy; pupupup</p>
-    </footer>
+<footer>
+    <p>&copy; pupupup</p>
+</footer>
 </body>
 </html>
