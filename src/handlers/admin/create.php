@@ -1,9 +1,14 @@
 <?php
+
+
 require_once __DIR__ . '/../../../config/db.php';
 require_once __DIR__ . '/../../../config/auth.php';
 require_once __DIR__ . '/../../../src/helpers.php';
 
+error_log("Session user: " . print_r($_SESSION['user'] ?? [], true));
+
 // if (!isLoggedIn() || !isAdmin()) {
+//     error_log("User not logged in or not admin");
 //     $_SESSION['error'] = 'You must be an admin to create Pokémon';
 //     header('Location: /pokemanager/public/login.php');
 //     exit;
@@ -24,10 +29,15 @@ function createPokemon(PDO $pdo, array $postData, array $files): array {
     // Преобразуем ID типов в имена
     $types = [];
     if (!empty($typeIds)) {
-        $placeholders = implode(',', array_fill(0, count($typeIds), '?'));
-        $stmt = $pdo->prepare("SELECT name FROM types WHERE id IN ($placeholders)");
-        $stmt->execute($typeIds);
-        $types = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        try {
+            $placeholders = implode(',', array_fill(0, count($typeIds), '?'));
+            $stmt = $pdo->prepare("SELECT name FROM types WHERE id IN ($placeholders)");
+            $stmt->execute($typeIds);
+            $types = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        } catch (PDOException $e) {
+            error_log("Error fetching types: " . $e->getMessage());
+            return ['errors' => ['type' => 'Failed to fetch types']];
+        }
     }
 
     $existingNames = getAllPokemonNames($pdo);
@@ -50,6 +60,16 @@ function createPokemon(PDO $pdo, array $postData, array $files): array {
             return ['errors' => ['image' => 'Failed to upload image']];
         }
     }
+
+    error_log("Data before validation: " . print_r([
+        'name' => $name,
+        'types' => $types,
+        'generation' => $generation,
+        'category' => $category,
+        'description' => $description,
+        'abilities' => $abilities,
+        'imageName' => $imageName
+    ], true));
 
     $errors = validatePokemon($name, $types, $generation, $category, $description, $abilities, $existingNames, $imageName);
     if (!empty($errors)) {
@@ -108,6 +128,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $_SESSION['errors'] = $result['errors'] ?? [];
     $_SESSION['old'] = $result['data'] ?? [];
+    error_log("Redirecting to create with errors: " . print_r($_SESSION['errors'], true));
     header('Location: /pokemanager/public/?action=create');
     exit;
 }
+
+include __DIR__ . '/../../../templates/admin/create.php';

@@ -10,59 +10,82 @@ function isAdmin() {
 
 function requireLogin() {
     if (!isLoggedIn()) {
-        header("Location: /login.php");
+        header("Location: /pokemanager/public/login.php");
         exit;
     }
 }
 
 function requireAdmin() {
     if (!isAdmin()) {
-        header("Location: /templates/everyone/index.php"); 
+        header("Location: /pokemanager/public/?action=home");
         exit;
     }
 }
 
-
 function validatePokemon($name, $type, $generation, $category, $description, $abilities, $existingNames, $imageName): array {
     $errors = [];
 
-    if (strlen($name) < 3) {
-        $errors[] = "Pokemon name must be at least 3 characters long.";
+    // Проверка имени
+    if (empty($name)) {
+        $errors['name'] = "Pokemon name is required.";
+    } elseif (strlen($name) < 3) {
+        $errors['name'] = "Pokemon name must be at least 3 characters long.";
+    } elseif (in_array($name, $existingNames)) {
+        $errors['name'] = "A Pokemon with that name already exists.";
     }
 
-    if (in_array($name, $existingNames)) {
-        $errors[] = "A Pokemon with that name already exists.";
-    }
-
+    // Проверка типов
     if (empty($type) || !is_array($type)) {
-        $errors[] = "At least one type must be specified.";
+        $errors['type'] = "At least one type must be specified.";
+    } elseif (count($type) > 2) {
+        $errors['type'] = "You can select up to 2 types.";
     }
 
-    if (!is_numeric($generation) || (int)$generation < 1) {
-        $errors[] = "Generation must be a number greater than 0.";
+    // Проверка поколения
+    if (empty($generation)) {
+        $errors['generation'] = "Generation is required.";
+    } elseif (!is_numeric($generation) || (int)$generation < 1) {
+        $errors['generation'] = "Generation must be a number greater than 0.";
     }
 
-    if (strlen($description) < 10) {
-        $errors[] = "The description must be at least 10 characters long..";
+    // Проверка категории (опционально)
+    if (!empty($category) && strlen($category) > 255) {
+        $errors['category'] = "Category is too long.";
     }
 
-    if (empty($abilities) || !is_array($abilities)) {
-        $errors[] = "Abilities must be specified.";
+    // Проверка описания
+    if (empty($description)) {
+        $errors['description'] = "Description is required.";
+    } elseif (strlen($description) < 10) {
+        $errors['description'] = "The description must be at least 10 characters long.";
     }
 
-    if (!$imageName) {
-        $errors[] = "Image not loaded.";
+    // Проверка способностей
+    if (empty($abilities) || !is_array($abilities) || count(array_filter($abilities)) === 0) {
+        $errors['abilities'] = "At least one ability must be specified.";
+    }
+
+    // Проверка изображения (опционально для теста)
+    // if (!$imageName) {
+    //     $errors['image'] = "Image not loaded.";
+    // }
+
+    if (!empty($errors)) {
+        error_log("Validation errors: " . print_r($errors, true));
     }
 
     return $errors;
 }
 
 function getAllPokemonNames(PDO $pdo): array {
-    $stmt = $pdo->query("SELECT name FROM pokemons");
-    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    try {
+        $stmt = $pdo->query("SELECT name FROM pokemons");
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (PDOException $e) {
+        error_log("Error in getAllPokemonNames: " . $e->getMessage());
+        return [];
+    }
 }
-
-
 
 function getPokemonById(PDO $pdo, int $id): ?array {
     $stmt = $pdo->prepare("SELECT * FROM pokemons WHERE id = ?");

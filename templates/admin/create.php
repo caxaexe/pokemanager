@@ -1,8 +1,16 @@
 <?php
+
+error_log("Reached create template");
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/../../config/auth.php';
 require_once __DIR__ . '/../../config/db.php';
-error_log("Reached create template");
+
 // if (!isLoggedIn() || !isAdmin()) {
+//     error_log("User not logged in or not admin in template");
 //     $_SESSION['error'] = 'You must be an admin to create Pokémon';
 //     header('Location: /pokemanager/public/login.php');
 //     exit;
@@ -12,16 +20,23 @@ $pdo = getPdoConnection();
 
 $errors = $_SESSION['errors'] ?? [];
 $data = $_SESSION['old'] ?? [];
+error_log("Errors in template: " . print_r($errors, true));
 unset($_SESSION['errors'], $_SESSION['old']);
 
-$typeStmt = $pdo->query('SELECT id, name FROM types');
-$types = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $typeStmt = $pdo->query('SELECT id, name FROM types');
+    $types = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
 
-$generationStmt = $pdo->query('SELECT id, name FROM generations');
-$generations = $generationStmt->fetchAll(PDO::FETCH_ASSOC);
+    $generationStmt = $pdo->query('SELECT id, name FROM generations');
+    $generations = $generationStmt->fetchAll(PDO::FETCH_ASSOC);
 
-$weaknessStmt = $pdo->query('SELECT id, name FROM weaknesses');
-$weaknesses = $weaknessStmt->fetchAll(PDO::FETCH_ASSOC);
+    $weaknessStmt = $pdo->query('SELECT id, name FROM weaknesses');
+    $weaknesses = $weaknessStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log("Database error in template: " . $e->getMessage());
+    $errors['database'] = 'Failed to load form data: ' . $e->getMessage();
+    $types = $generations = $weaknesses = [];
+}
 
 ob_start();
 ?>
@@ -97,24 +112,6 @@ ob_start();
     #abilities textarea {
         margin-top: 8px;
     }
-
-    .cancel-button {
-        display: inline-block;
-        margin-top: 20px;
-        background-color: #e74c3c;
-        color: white;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 16px;
-        text-decoration: none; /* Убираем подчеркивание */
-        text-align: center;
-    }
-
-    .cancel-button:hover {
-        background-color: #c0392b;
-    }
 </style>
 
 <h2>Create your own Pokémon</h2>
@@ -122,6 +119,10 @@ ob_start();
 <?php if (isset($_SESSION['success'])): ?>
     <p style="color: green;"><?= htmlspecialchars($_SESSION['success']) ?></p>
     <?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
+<?php if (!empty($errors['database'])): ?>
+    <p class="error"><?= htmlspecialchars($errors['database']) ?></p>
 <?php endif; ?>
 
 <form action="/pokemanager/public/?action=create" method="post" enctype="multipart/form-data">
@@ -224,7 +225,6 @@ ob_start();
 
     <button type="button" onclick="addAbility()">Add Ability</button><br><br>
     <button type="submit">Save</button>
-    <a href="../../public/index.php" class="button cancel-button">Cancel</a>
 </form>
 
 <script>

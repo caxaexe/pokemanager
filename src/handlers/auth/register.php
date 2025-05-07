@@ -35,5 +35,5 @@ $_SESSION['user_id'] = $pdo->lastInsertId();
 $_SESSION['username'] = $username;
 $_SESSION['role'] = 'user';
 
-header('Location: /templates/everyone/index.php');
+header('Location: ../../../public/index.php');
 exit();
