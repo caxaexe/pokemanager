@@ -40,10 +40,10 @@
     }
 
     .nav-button {
-        background-color: #fff;
-        color: #8e44ad;
+        background-color: #DCDA87; /* Новый цвет кнопки */
+        color: #333; /* Цвет текста */
         border: none;
-        padding: 8px 14px;
+        padding: 10px 20px;
         border-radius: 6px;
         font-size: 0.9rem;
         cursor: pointer;
@@ -51,7 +51,7 @@
     }
 
     .nav-button:hover {
-        background-color: #f0e6fa;
+        background-color: #b5b67a; /* Цвет при наведении */
         color: #5e3370;
     }
 
@@ -73,7 +73,46 @@
     a {
         text-decoration: none;
     }
+
+    .button-container {
+        display: flex;
+        justify-content: center;
+        gap: 15px; 
+        margin-top: 20px;
+    }
+
+    .cancel-button {
+        background-color: #DCDA87;
+        color: #333;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .cancel-button:hover {
+        background-color:rgb(216, 216, 170);
+        color: #5e3370;
+    }
+
+    .submit-button {
+        background-color:rgb(252, 252, 229);
+        color: #333;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .submit-button:hover {
+        background-color: rgb(166, 166, 149);
+        color: #5e3370;
+    }
 </style>
+
 
 </head>
 <body>

@@ -12,7 +12,6 @@ try {
     die('Ошибка подключения к базе данных: ' . $e->getMessage());
 }
 
-
 function getPdoConnection() {
     global $pdo;
     return $pdo;

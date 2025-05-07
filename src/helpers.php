@@ -17,7 +17,7 @@ function requireLogin() {
 
 function requireAdmin() {
     if (!isAdmin()) {
-        header("Location: /templates/everyone/index.php"); // или 403 страница
+        header("Location: /templates/everyone/index.php"); 
         exit;
     }
 }
@@ -27,31 +27,31 @@ function validatePokemon($name, $type, $generation, $category, $description, $ab
     $errors = [];
 
     if (strlen($name) < 3) {
-        $errors[] = "Имя покемона должно быть не менее 3 символов.";
+        $errors[] = "Pokemon name must be at least 3 characters long.";
     }
 
     if (in_array($name, $existingNames)) {
-        $errors[] = "Покемон с таким именем уже существует.";
+        $errors[] = "A Pokemon with that name already exists.";
     }
 
     if (empty($type) || !is_array($type)) {
-        $errors[] = "Необходимо указать хотя бы один тип.";
+        $errors[] = "At least one type must be specified.";
     }
 
     if (!is_numeric($generation) || (int)$generation < 1) {
-        $errors[] = "Поколение должно быть числом больше 0.";
+        $errors[] = "Generation must be a number greater than 0.";
     }
 
     if (strlen($description) < 10) {
-        $errors[] = "Описание должно быть не короче 10 символов.";
+        $errors[] = "The description must be at least 10 characters long..";
     }
 
     if (empty($abilities) || !is_array($abilities)) {
-        $errors[] = "Необходимо указать способности.";
+        $errors[] = "Abilities must be specified.";
     }
 
     if (!$imageName) {
-        $errors[] = "Изображение не загружено.";
+        $errors[] = "Image not loaded.";
     }
 
     return $errors;

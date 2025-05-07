@@ -3,79 +3,90 @@
 require_once __DIR__ . '/../../../config/db.php';
 require_once __DIR__ . '/../../../src/helpers.php';
 
+$pdo = getPdoConnection();
 
-function updatePokemon(PDO $pdo, $id, $data) {
-    $title = $data['title'] ?? '';
-    $category = $data['category'] ?? '';
-    $description = $data['description'] ?? '';
-    $tags = $data['tags'] ?? []; 
-    $steps = $data['steps'] ?? [];
+$id = $_GET['id'] ?? null;
+if (!$id) {
+    die("Missing Pokémon ID.");
+}
 
-    
-    $errors = validateSpell($title, $category, $description, $tags, $steps);
+function updatePokemon(PDO $pdo, int $id, array $postData): array {
+    $name = trim($postData['name'] ?? '');
+    $generation = trim($postData['generation'] ?? '');
+    $category = trim($postData['category'] ?? '');
+    $description = trim($postData['description'] ?? '');
+    $type = array_filter(array_map('trim', $postData['type'] ?? []));
+    $abilities = array_filter(array_map('trim', $postData['abilities'] ?? []));
+    $weaknesses = array_filter(array_map('trim', $postData['weaknesses'] ?? []));
 
-    if (empty($errors)) {
-   
-        $stmt = $pdo->prepare("UPDATE spells SET title = ?, category = ?, description = ?, tags = ?, steps = ? WHERE id = ?");
-        $stmt->execute([
-            $title,
-            $category,
-            $description,
-            implode(',', $tags),  // Преобразуем массив тегов в строку
-            json_encode($steps),  // Преобразуем шаги в JSON
-            $id
-        ]);
-        return ['success' => true];
+    $existingNames = getAllPokemonNames($pdo, $id); // exclude current name
+
+    $stmt = $pdo->prepare('SELECT image_url FROM pokemons WHERE id = ?');
+    $stmt->execute([$id]);
+    $currentImage = $stmt->fetchColumn();
+
+    $imageName = $currentImage;
+    if (!empty($_FILES['image_url']) && $_FILES['image_url']['error'] === UPLOAD_ERR_OK) {
+        $tmpPath = $_FILES['image_url']['tmp_name'];
+        $originalName = $_FILES['image_url']['name'];
+        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+        $imageName = uniqid() . '.' . $extension;
+        $targetPath = __DIR__ . '/../../../public/assets/' . $imageName;
+
+        move_uploaded_file($tmpPath, $targetPath);
+
+        // // (необязательно) удалить старое изображение
+        // if ($currentImage && file_exists(__DIR__ . '/../../../public/assets/' . $currentImage)) {
+        //     unlink(__DIR__ . '/../../../public/assets/' . $currentImage);
+        // }
     }
 
-    // Возвращаем ошибки в случае неудачной валидации
-    return ['errors' => $errors];
+    $errors = validatePokemon($name, $type, $generation, $category, $description, $abilities, $existingNames, $imageName);
+    if (!empty($errors)) {
+        return ['errors' => $errors, 'data' => compact('name', 'generation', 'category', 'description', 'type', 'abilities', 'weaknesses')];
+    }
+
+    try {
+        $stmt = $pdo->prepare('
+            UPDATE pokemons
+            SET name = ?, generation = ?, category = ?, description = ?, type = ?, abilities = ?, image = ?
+            WHERE id = ?
+        ');
+        $stmt->execute([
+            $name,
+            $generation,
+            $category,
+            $description,
+            json_encode($type, JSON_UNESCAPED_UNICODE),
+            json_encode($abilities, JSON_UNESCAPED_UNICODE),
+            $imageName,
+            $id
+        ]);
+
+        // Обновим слабости
+        $pdo->prepare('DELETE FROM pokemon_weaknesses WHERE pokemon_id = ?')->execute([$id]);
+        if (!empty($weaknesses)) {
+            $stmtWeak = $pdo->prepare('INSERT INTO pokemon_weaknesses (pokemon_id, weakness_id) VALUES (?, ?)');
+            foreach ($weaknesses as $weakId) {
+                $stmtWeak->execute([$id, $weakId]);
+            }
+        }
+
+        return ['success' => true];
+    } catch (PDOException $e) {
+        return ['errors' => ['database' => $e->getMessage()], 'data' => $postData];
+    }
 }
 
-$pdo = getPdoConnection();
-$id = $_GET['id'] ?? null;
-
-// Проверка, что ID заклинания передан
-if (!$id) {
-    echo "ID заклинания не указано.";
-    exit;
-}
-
-// Получаем данные заклинания по ID
-$spell = getSpellById($pdo, $id);
-
-if (!$spell) {
-    echo "Заклинание не найдено.";
-    exit;
-}
-
-$errors = [];
-
-// Обработка POST-запроса для обновления данных
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $tagsArray = $_POST['tags'] ?? [];  
-    $steps = array_filter($_POST['steps'] ?? [], fn($step) => trim($step) !== '');
-
-    // Подготовка данных для обновления
-    $data = [
-        'title' => $_POST['title'] ?? '',
-        'category' => $_POST['category'] ?? '',
-        'description' => $_POST['description'] ?? '',
-        'tags' => $tagsArray, 
-        'steps' => $steps,    
-    ];
-
-    // Выполнение обновления
-    $result = updateSpell($pdo, $id, $data);
+    $result = updatePokemon($pdo, (int)$id, $_POST);
 
     if (!empty($result['success'])) {
-        header("Location: /list-of-spells/public/?action=show&id=$id");
+        header('Location: /pokemanager/public/?action=list');
         exit;
     }
 
     $errors = $result['errors'] ?? [];
-    $spell = array_merge($spell, $data);
+    $old = $result['data'] ?? [];
 }
-
-// Подключение шаблона для редактирования
-include __DIR__ . '/../../../templates/spell/edit.php';
+?>

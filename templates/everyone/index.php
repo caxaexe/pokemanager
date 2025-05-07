@@ -6,6 +6,7 @@
     </a>
 <?php endif; ?>
 
+<link rel="stylesheet" href="./css/styles.css">
 <style>
     .pokemon-grid {
         display: grid;
@@ -73,21 +74,7 @@
         font-weight: bold;
     }
 
-    .nav-button {
-        margin: 20px auto;
-        display: block;
-        padding: 10px 20px;
-        background-color: #3498db;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-
-    .nav-button:hover {
-        background-color: #2980b9;
+  
     }
 </style>
 

@@ -1,207 +1,253 @@
 <?php
 
-require_once __DIR__ . '/../../../config/auth.php';
-requireAdmin();
+require_once __DIR__ . '/../../config/db.php';
 
+$pdo = getPdoConnection();
+
+
+$typeStmt = $pdo->query('SELECT id, name FROM types');
+$types = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$generationStmt = $pdo->query('SELECT id, name FROM generations');
+$generations = $generationStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$weaknessStmt = $pdo->query('SELECT id, name FROM weaknesses');
+$weaknesses = $weaknessStmt->fetchAll(PDO::FETCH_ASSOC);
 
 ob_start();
-
-/** @var PDO $pdo Подключение к базе данных. */
-
-// Получение списка категорий из базы данных
-$categoryStmt = $pdo->query('SELECT id, name FROM categories');
-$categories = $categoryStmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Преобразование тегов заклинания в массив ID (если они сохранены в виде строки)
-$selectedTags = is_array($spell['tags']) ? $spell['tags'] : (empty($spell['tags']) ? [] : explode(',', $spell['tags']));
 ?>
-
+<link rel="stylesheet" href="./css/styles.css">
 <style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #f2f7fa;
+        color: #333;
+        padding: 20px;
+    }
+
     h2 {
-        font-size: 2rem;
-        color: #5d3a9b;
+        text-align: center;
+        color: #2c3e50;
         margin-bottom: 20px;
-        text-align: center; 
     }
 
     form {
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        width: 60%;
+        background: #fff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
         margin: 0 auto;
     }
 
     label {
         display: block;
-        font-size: 1rem;
-        margin-bottom: 8px;
+        margin-top: 15px;
+        font-weight: bold;
+        color: #34495e;
     }
 
-    input, select, textarea {
+    input[type="text"],
+    textarea,
+    select {
         width: 100%;
         padding: 10px;
-        margin-bottom: 15px;
+        margin-top: 5px;
         border: 1px solid #ccc;
-        border-radius: 5px;
-        font-size: 1rem;
+        border-radius: 8px;
         box-sizing: border-box;
+        font-size: 14px;
+        background-color: #fafafa;
     }
 
-    input:focus, select:focus, textarea:focus {
-        border-color: #5d3a9b;
-        outline: none;
+    textarea {
+        min-height: 80px;
+        resize: vertical;
     }
 
-    button {
-        background-color: #5d3a9b;
+    input[type="file"] {
+        margin-top: 8px;
+    }
+
+    .error {
+        color: #e74c3c;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+
+    button[type="submit"],
+    button[type="button"] {
+        margin-top: 20px;
+        background-color: #3498db;
         color: white;
-        padding: 12px 20px;
         border: none;
-        border-radius: 5px;
+        padding: 12px 20px;
+        border-radius: 8px;
         cursor: pointer;
-        font-size: 1rem;
+        font-size: 16px;
         transition: background-color 0.3s ease;
     }
 
     button:hover {
-        background-color: #4b2c81;
+        background-color: #2980b9;
     }
 
-    .errors ul {
-        padding-left: 20px;
-        color: red;
+    select[multiple] {
+        height: auto;
+        min-height: 100px;
     }
 
-    .errors li {
-        font-size: 0.9rem;
+    #abilities textarea {
+        margin-top: 8px;
     }
 
-    .error {
-        color: red;
-        font-size: 0.9rem;
-    }
-
-    #steps textarea {
-        margin-bottom: 10px;
-        font-size: 1rem;
-    }
-
-    #steps button {
-        margin-top: 10px;
-        background-color: #5d3a9b;
+    .cancel-button {
+        display: inline-block;
+        margin-top: 20px;
+        background-color: #e74c3c;
         color: white;
-        padding: 10px 15px;
         border: none;
-        border-radius: 5px;
+        padding: 12px 20px;
+        border-radius: 8px;
         cursor: pointer;
+        font-size: 16px;
+        text-decoration: none; /* Убираем подчеркивание */
+        text-align: center;
     }
 
-    #steps button:hover {
-        background-color: #4b2c81;
+    .cancel-button:hover {
+        background-color: #c0392b;
     }
 </style>
 
-<h2>Редактировать заклинание</h2>
+<h2>Edit Pokemon</h2>
 
-<?php if (!empty($errors)): ?>
-    <div class="errors">
-        <ul>
-            <?php foreach ($errors as $error): ?>
-                <li><?= htmlspecialchars($error) ?></li>
-            <?php endforeach; ?>
-        </ul>
-    </div>
-<?php endif; ?>
-
-<form action="/list-of-spells/public/?action=edit&id=<?= $spell['id'] ?>" method="post">
-    <label for="title">Название:</label>
-    <input type="text" name="title" id="title" value="<?= htmlspecialchars($spell['title'] ?? '') ?>">
-    <?php if (!empty($errors['title'])): ?>
-        <p style="color:red"><?= htmlspecialchars($errors['title']) ?></p>
+<form action="/pokemanager/public/?action=edit&id=<?= $id ?>" method="post" enctype="multipart/form-data">
+<div>
+    <label for="name">Name:</label>
+    <input type="text" name="name" id="name" value="<?= htmlspecialchars($data['name'] ?? '') ?>">
+    <?php if (!empty($errors['name'])): ?>
+        <p style="color:red"><?= htmlspecialchars($errors['name']) ?></p>
     <?php endif; ?>
+    </div>
     <br>
 
-    <label for="category">Категория:</label>
-    <select name="category" id="category">
-        <option value="">Выберите категорию</option>
-        <?php foreach ($categories as $cat): ?>
-            <option value="<?= $cat['id'] ?>" <?= ($spell['category'] ?? '') == $cat['id'] ? 'selected' : '' ?>>
-                <?= htmlspecialchars($cat['name']) ?>
+    <div>
+    <label for="type">Type(choose up to 2):</label>
+    <select name="type[]" id="type" multiple size="5">
+        <?php
+        $typeStmt = $pdo->query("SELECT id, name FROM types");
+        $allTypes = $typeStmt->fetchAll(PDO::FETCH_ASSOC);
+        $selectedTypes = $data['type'] ?? [];
+        ?>
+
+        <?php foreach ($allTypes as $type): ?>
+            <option value="<?= $type['id'] ?>"
+                <?= in_array($type['id'], $selectedTypes) ? 'selected' : '' ?>>
+                <?= htmlspecialchars($type['name']) ?>
             </option>
         <?php endforeach; ?>
     </select>
+
+    <?php if (isset($errors['type'])): ?>
+        <p class="error"><?= htmlspecialchars($errors['type']) ?></p>
+    <?php endif; ?>
+    </div>
+    <br>
+
+
+    <div>
+    <label for="generation">Generation:</label>
+    <select name="generation" id="generation">
+        <option value="">Select generation</option>
+        <?php foreach ($generations as $gen): ?>
+            <option value="<?= $gen['id'] ?>" <?= ($data['generation'] ?? '') == $gen['id'] ? 'selected' : '' ?>>
+                <?= htmlspecialchars($gen['name']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+
+    <?php if (!empty($errors['generation'])): ?>
+        <p style="color:red"><?= htmlspecialchars($errors['generation']) ?></p>
+    <?php endif; ?>
+    </div>
+    <br>
+
+
+    <div>
+    <label for="category">Category:</label>
+    <input type="text" name="category" id="category" value="<?= htmlspecialchars($data['category'] ?? '') ?>">
     <?php if (!empty($errors['category'])): ?>
         <p style="color:red"><?= htmlspecialchars($errors['category']) ?></p>
     <?php endif; ?>
     <br>
 
-    <label for="description">Описание:</label>
-    <textarea name="description" id="description"><?= htmlspecialchars($spell['description'] ?? '') ?></textarea>
+
+    <div>
+    <label for="description">Description:</label>
+    <textarea name="description" id="description"><?= htmlspecialchars($data['description'] ?? '') ?></textarea>
     <?php if (!empty($errors['description'])): ?>
         <p style="color:red"><?= htmlspecialchars($errors['description']) ?></p>
     <?php endif; ?>
+    </div>
     <br>
+
 
     <div>
-        <label for="tags">Теги:</label>
-        <select name="tags[]" id="tags" multiple>
-            <?php
-            /**
-             * Получение всех тегов из базы данных.
-             * @var array[] $allTags Массив тегов в формате [['id' => int, 'name' => string], ...]
-             */
-            $tagStmt = $pdo->query("SELECT id, name FROM tags");
-            $allTags = $tagStmt->fetchAll(PDO::FETCH_ASSOC);
-            ?>
+    <label for="weaknesses">Weaknesses</label>
+    <select name="weaknesses[]" multiple id="weaknesses">
+        <?php
+        $stmt = $pdo->query('SELECT * FROM weaknesses');
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            echo "<option value='{$row['id']}'>{$row['name']}</option>";
+        }
+        ?>
+    </select>
 
-            <?php foreach ($allTags as $tag): ?>
-                <option value="<?= $tag['id'] ?>"
-                    <?= in_array($tag['id'], $selectedTags) ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($tag['name']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-
-        <?php if (isset($errors['tags'])): ?>
-            <p class="error"><?= htmlspecialchars($errors['tags']) ?></p>
-        <?php endif; ?>
+    <?php if (isset($errors['weaknesses'])): ?>
+        <p class="error"><?= htmlspecialchars($errors['weaknesses']) ?></p>
+    <?php endif; ?>
     </div>
     <br>
 
-    <label>Шаги выполнения:</label><br>
-    <div id="steps">
-        <?php
-        $stepData = $spell['steps'] ?? [''];
-        foreach ($stepData as $stepText):
-        ?>
-            <textarea name="steps[]" placeholder="Введите шаг выполнения заклинания"><?= htmlspecialchars($stepText) ?></textarea><br>
-        <?php endforeach; ?>
-    </div>
-    <?php if (!empty($errors['steps'])): ?>
-        <p style="color:red"><?= htmlspecialchars($errors['steps']) ?></p>
+
+    <label for="image">Upload Image:</label>
+    <input type="file" name="image" id="image">
+    <?php if (!empty($errors['image'])): ?>
+        <p class="error"><?= htmlspecialchars($errors['image']) ?></p>
     <?php endif; ?>
 
-    <button type="button" onclick="addStep()">Добавить шаг</button><br><br>
 
-    <button type="submit">Сохранить изменения</button>
+    <div id="abilities">
+    <label>Abilities:</label><br>
+        <?php
+        $abilityData = $data['abilities'] ?? [''];
+        foreach ($abilityData as $abilityText):
+        ?>
+            <textarea name="abilities[]" placeholder="Enter ability"><?= htmlspecialchars($abilityText) ?></textarea><br>
+        <?php endforeach; ?>
+    </div>
+    <?php if (!empty($errors['abilities'])): ?>
+        <p style="color:red"><?= htmlspecialchars($errors['abilities']) ?></p>
+    <?php endif; ?>
+
+    <button type="button" onclick="addAbility()">Enter ability</button><br><br>
+
+    <button type="submit">Update</button>
+    <a href="index.php" class="button cancel-button">Cancel</a>
 </form>
 
 <script>
-    function addStep() {
-        const newStep = document.createElement('textarea');
-        newStep.name = 'steps[]';
-        newStep.placeholder = 'Введите шаг выполнения заклинания';
-        document.getElementById('steps').appendChild(newStep);
-        document.getElementById('steps').appendChild(document.createElement('br'));
+    function addAbility() {
+        const container = document.getElementById('abilities');
+        const textarea = document.createElement('textarea');
+        textarea.name = 'abilities[]';
+        container.appendChild(textarea);
+        container.appendChild(document.createElement('br'));
     }
 </script>
 
 <?php
-
-// Завершаем буферизацию и включаем layout
 $content = ob_get_clean();
-include __DIR__ . '/../layout.php';
-
+include __DIR__ . '/../everyone/layout.php';
 ?>
